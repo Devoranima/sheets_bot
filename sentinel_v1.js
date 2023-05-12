@@ -22,45 +22,62 @@ const N = 1000;
     let day_start = doc.sheetsByTitle.DayStart;
     await day_start.loadCells('A2:B3');
     
+//    /////////////////////////////////////////////////////////////////////////////// 
+//    await day_start.updateProperties({ title: getCurrentDate() });
+
+//    const new_sheet = await doc.addSheet({title:'DayStart'});
+
+//    await new_sheet.setHeaderRow(['address', 'start'], 1);
+
+//    await new_sheet.loadCells('A2:B3');
+//    for (let i = 0; i < 2; i++){
+//        for (let j = 0; j < 2;j++){
+//            new_sheet.getCell(i+1, j).value = day_start.getCell(i+1, j).value
+//        }
+//    }
+//    await new_sheet.saveUpdatedCells();
+
+//    day_start = new_sheet;
+//////////////////////////////////////////////////////////////////////////////////
+//    await dayStartCorrection(day_start);
     
-    
-    let new_day = setInterval( async function(){ 
-        const date = new Date();
-        let hour = date.getHours();
-        let minutes = date.getMinutes();
-        if (hour == 0) {
-            try {
-/////////////////////////////////////////////////////////////////////////////// 
-                await day_start.updateProperties({ title: getCurrentDate() });
+//    let new_day = setInterval( async function(){ 
+//        const date = new Date();
+//        let hour = date.getHours();
+//        let minutes = date.getMinutes();
+//        if (hour == 1) {
+//            try {
+///////////////////////////////////////////////////////////////////////////////// 
+//                await day_start.updateProperties({ title: getCurrentDate() });
 
-                const new_sheet = await doc.addSheet({title:'DayStart'});
+//                const new_sheet = await doc.addSheet({title:'DayStart'});
 
-                await new_sheet.setHeaderRow(['address', 'start'], 1);
+//                await new_sheet.setHeaderRow(['address', 'start'], 1);
 
-                await new_sheet.loadCells('A2:B3');
-                for (let i = 0; i < 2; i++){
-                    for (let j = 0; j < 2;j++){
-                        new_sheet.getCell(i+1, j).value = day_start.getCell(i+1, j).value
-                    }
-                }
-                await new_sheet.saveUpdatedCells();
+//                await new_sheet.loadCells('A2:B3');
+//                for (let i = 0; i < 2; i++){
+//                    for (let j = 0; j < 2;j++){
+//                        new_sheet.getCell(i+1, j).value = day_start.getCell(i+1, j).value
+//                    }
+//                }
+//                await new_sheet.saveUpdatedCells();
 
-                day_start = new_sheet;
-////////////////////////////////////////////////////////////////////////////////
-                await dayStartCorrection(day_start);
-            } catch (error) {
-                write('./logs.txt', 'Error at Day Start: ' + error.toString()+'\n');
-            }
+//                day_start = new_sheet;
+//////////////////////////////////////////////////////////////////////////////////
+//                await dayStartCorrection(day_start);
+//            } catch (error) {
+//                write('./logs.txt', 'Error at Day Start: ' + error.toString()+'\n');
+//            }
+//        }
+//    }, 1000*60*60);
+
+    let scanner = setInterval(() => {
+        try {
+            monitor(top, day_start);
+        } catch (error) {
+            write('./logs.txt', 'Error at monitor high level: ' + error.toString()+'\n');
         }
-    } , 1000*60*60);
-
-    //let scanner = setInterval(() => {
-    //    try {
-    //        monitor(top, day_start);
-    //    } catch (error) {
-    //        write('./logs.txt', 'Error at monitor high level: ' + error.toString()+'\n');
-    //    }
-    //}, 5000);
+    }, 5000);
 })()
 
 async function monitor(top, day_start){
