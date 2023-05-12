@@ -1,4 +1,5 @@
 const axios = require('axios');
+const fs = require('fs');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const creds = require('./testfield-386413-25ca2288a487.json');
@@ -26,16 +27,25 @@ const N = 500;
         let hour = date.getHours();
         let minutes = date.getMinutes();
         if (hour == 0) {
-            dayStartCorrection(day_start); 
+            try {
+                dayStartCorrection(day_start);
+            } catch (error) {
+                write('./logs.txt', 'Error at Day Start: ' + error.toString+'\n');
+            }
         }
     } , 1000*60*60);
 
     let scanner = setInterval(() => {
-        monitor(top, morrons, day_start);
+        try {
+            monitor(top, morrons, day_start);
+        } catch (error) {
+            write('./logs.txt', 'Error at monitor high level: ' + error.toString+'\n');
+        }
     }, 5000);
 })()
 
 async function monitor(top, alert, day_start){
+    
     const response = (await axios.get('https://explorer.dogechain.dog/api', {
         params: {
             module:'token',
@@ -98,9 +108,17 @@ async function monitor(top, alert, day_start){
         //*Array of Day Start Sheet's addresses
         const sheet_day_start_addresses = [...sheet_day_start_wallets.map(e=>e.address)];
 
-        await correctAlert(alert, api_current_addresses, sheet_current_wallets);
-        await correctTop(top, api_current_wallets, api_current_addresses, sheet_day_start_wallets, sheet_day_start_addresses);
-
+        try {
+            await correctAlert(alert, api_current_addresses, sheet_current_wallets);
+        } catch (error) {
+            write('./logs.txt', 'Error at Alert Sheet Correction function: ' + error.toString+'\n');
+        }
+        
+        try {
+            await correctTop(top, api_current_wallets, api_current_addresses, sheet_day_start_wallets, sheet_day_start_addresses);
+        } catch (error) {
+            write('./logs.txt', 'Error at Top Sheet Correction function: ' + error.toString+'\n');
+        }
     }
     else console.log('network too busy...');
 }
@@ -207,6 +225,15 @@ const getCurrentDate = ()=>{
     today = date.join('.');
     return (today);
 }
+
+const write = (path_to_file, content)=>{
+    fs.writeFile(path_to_file, content, { flag: 'a' }, err => {
+        if (err) {
+          console.error(err);
+        }
+    });
+}
+
 
 
 async function test(sheet){
