@@ -3,14 +3,13 @@ const fs = require('fs');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const creds = require('./testfield-386413-25ca2288a487.json');
-const { Console, log } = require('console');
 
 const token = '0x2f90907fD1DC1B7a484b6f31Ddf012328c2baB28';
 
 const tst = '19o_EBhDeJ9x_NHbihCPv9H9aXfWFNUTcYU68QmYXLcs';
 const sheet = '1RPjRZ3V0wtFMDE-zdSnIsBnedaMM1xrbjyg_YgwhGRc';
 
-const N = 500;
+const N = 1000;
 
 (async function (){
     console.log('Starting...');
@@ -18,9 +17,9 @@ const N = 500;
     await doc.useServiceAccountAuth(creds);
 
     await doc.loadInfo(); // loads document properties and worksheets
-    const top = doc.sheetsByIndex[0];
-    const morrons = doc.sheetsByIndex[1];
-    const day_start = doc.sheetsByIndex[2];
+    const top = doc.sheetsByTitle.Wallets;
+    // const morrons = doc.sheetsByIndex[1];
+    const day_start = doc.sheetsByTitle.DayStart;
 
     let new_day = setInterval( function(){ 
         const date = new Date();
@@ -30,21 +29,21 @@ const N = 500;
             try {
                 dayStartCorrection(day_start);
             } catch (error) {
-                write('./logs.txt', 'Error at Day Start: ' + error.toString+'\n');
+                write('./logs.txt', 'Error at Day Start: ' + error.toString()+'\n');
             }
         }
     } , 1000*60*60);
 
     let scanner = setInterval(() => {
         try {
-            monitor(top, morrons, day_start);
+            monitor(top, day_start);
         } catch (error) {
-            write('./logs.txt', 'Error at monitor high level: ' + error.toString+'\n');
+            write('./logs.txt', 'Error at monitor high level: ' + error.toString()+'\n');
         }
     }, 5000);
 })()
 
-async function monitor(top, alert, day_start){
+async function monitor(top, day_start){
     
     const response = (await axios.get('https://explorer.dogechain.dog/api', {
         params: {
@@ -108,16 +107,16 @@ async function monitor(top, alert, day_start){
         //*Array of Day Start Sheet's addresses
         const sheet_day_start_addresses = [...sheet_day_start_wallets.map(e=>e.address)];
 
-        try {
-            await correctAlert(alert, api_current_addresses, sheet_current_wallets);
-        } catch (error) {
-            write('./logs.txt', 'Error at Alert Sheet Correction function: ' + error.toString+'\n');
-        }
+        // try {
+        //     await correctAlert(alert, api_current_addresses, sheet_current_wallets);
+        // } catch (error) {
+        //     write('./logs.txt', 'Error at Alert Sheet Correction function: ' + error.toString()+'\n');
+        // }
         
         try {
-            await correctTop(top, api_current_wallets, api_current_addresses, sheet_day_start_wallets, sheet_day_start_addresses);
+            await correctTop(top, day_start, api_current_wallets, api_current_addresses, sheet_day_start_wallets, sheet_day_start_addresses);
         } catch (error) {
-            write('./logs.txt', 'Error at Top Sheet Correction function: ' + error.toString+'\n');
+            write('./logs.txt', 'Error at Top Sheet Correction function: ' + error.toString()+'\n');
         }
     }
     else console.log('network too busy...');
@@ -147,8 +146,9 @@ async function correctAlert(ex, api_current_addresses, sheet_current_wallets){
     await ex.addRows([...array_alerts])
 }
 
-async function correctTop(top,api_current_wallets, api_current_addresses, sheet_day_start_wallets, sheet_day_start_addresses){
-    for (let i = 0; i < N; i++){
+async function correctTop(top, day_start, api_current_wallets, api_current_addresses, sheet_day_start_wallets, sheet_day_start_addresses){
+    const newcumers = [];
+    for (let i = 0; i < api_current_addresses.length; i++){
         const api_address = api_current_addresses[i];
         const api_current_holds = api_current_wallets[i].current; 
 
@@ -158,12 +158,20 @@ async function correctTop(top,api_current_wallets, api_current_addresses, sheet_
 
         
         const index_in_start = sheet_day_start_addresses.indexOf(api_address);
-        // console.log(api_address, index_in_start);
-        const start_hold = sheet_day_start_wallets[index_in_start].start;
+        let start_hold;
+        if (index_in_start == -1) {
+            start_hold = 0;
+            newcumers.push({
+                address: api_address,
+                start: 0
+            })
+        }
+        else start_hold = sheet_day_start_wallets[index_in_start].start;
         cell_address.value = api_address;
         cell_start.value = start_hold;
         cell_current.value = api_current_holds;
     }
+    await day_start.addRows([...newcumers]);
     await top.saveUpdatedCells();
 }
 
@@ -174,7 +182,8 @@ async function dayStartCorrection(sheet){
             action:'getTokenHolders',
             contractaddress:token,
             page:0,
-            offset:10000
+            offset:N
+            // offset:10000
         }
     }))
     if (response.data.result){
@@ -237,10 +246,5 @@ const write = (path_to_file, content)=>{
 
 
 async function test(sheet){
-    // await sheet.loadCells('A2:E101');
-    // (sheet.getCell(1, 1)).value = 'O kow ko2';
-    // await sheet.saveUpdatedCells();
-    // const rows = await sheet.getRows();
-    // console.log(rows[3])
-    // console.log(getCurrentDate())
+
 }
