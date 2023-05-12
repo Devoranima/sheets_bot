@@ -7,40 +7,60 @@ const creds = require('./testfield-386413-25ca2288a487.json');
 const token = '0x2f90907fD1DC1B7a484b6f31Ddf012328c2baB28';
 
 const tst = '19o_EBhDeJ9x_NHbihCPv9H9aXfWFNUTcYU68QmYXLcs';
-const sheet = '1RPjRZ3V0wtFMDE-zdSnIsBnedaMM1xrbjyg_YgwhGRc';
+const sheets = '1RPjRZ3V0wtFMDE-zdSnIsBnedaMM1xrbjyg_YgwhGRc';
 
 const N = 1000;
 
 (async function (){
     console.log('Starting...');
-    const doc = new GoogleSpreadsheet(sheet);
+    const doc = new GoogleSpreadsheet(sheets);
     await doc.useServiceAccountAuth(creds);
 
     await doc.loadInfo(); // loads document properties and worksheets
     const top = doc.sheetsByTitle.Wallets;
     // const morrons = doc.sheetsByIndex[1];
-    const day_start = doc.sheetsByTitle.DayStart;
-
-    let new_day = setInterval( function(){ 
+    let day_start = doc.sheetsByTitle.DayStart;
+    await day_start.loadCells('A2:B3');
+    
+    
+    
+    let new_day = setInterval( async function(){ 
         const date = new Date();
         let hour = date.getHours();
         let minutes = date.getMinutes();
         if (hour == 0) {
             try {
-                dayStartCorrection(day_start);
+/////////////////////////////////////////////////////////////////////////////// 
+                await day_start.updateProperties({ title: getCurrentDate() });
+
+                const new_sheet = await doc.addSheet({title:'DayStart'});
+
+                await new_sheet.setHeaderRow(['address', 'start'], 1);
+
+                await new_sheet.loadCells('A2:B3');
+                for (let i = 0; i < 2; i++){
+                    for (let j = 0; j < 2;j++){
+                        new_sheet.getCell(i+1, j).value = day_start.getCell(i+1, j).value
+                    }
+                }
+                await new_sheet.saveUpdatedCells();
+
+                day_start = new_sheet;
+////////////////////////////////////////////////////////////////////////////////
+                await dayStartCorrection(day_start);
             } catch (error) {
                 write('./logs.txt', 'Error at Day Start: ' + error.toString()+'\n');
             }
         }
     } , 1000*60*60);
 
-    let scanner = setInterval(() => {
-        try {
-            monitor(top, day_start);
-        } catch (error) {
-            write('./logs.txt', 'Error at monitor high level: ' + error.toString()+'\n');
-        }
-    }, 5000);
+    //let scanner = setInterval(() => {
+    //    try {
+    //        monitor(top, day_start);
+    //    } catch (error) {
+    //        write('./logs.txt', 'Error at monitor high level: ' + error.toString()+'\n');
+    //    }
+    //}, 5000);
 })()
 
 async function monitor(top, day_start){
@@ -246,5 +266,5 @@ const write = (path_to_file, content)=>{
 
 
 async function test(sheet){
-
+    await sheet.updateProperties({ title: getCurrentDate() });
 }
