@@ -12,7 +12,7 @@ const sheets = '1RPjRZ3V0wtFMDE-zdSnIsBnedaMM1xrbjyg_YgwhGRc';
 const N = 1000;
 
 (async function (){
-    console.log('Starting...');
+    console.log('starting my watch...');
     const doc = new GoogleSpreadsheet(sheets);
     await doc.useServiceAccountAuth(creds);
 
@@ -54,11 +54,10 @@ const N = 1000;
 //            }
 //        }
 //    }, 1000*60*60);
-
     let new_day = setInterval( async function(){ 
         const date = new Date();
         let hour = date.getHours();
-        if (hour == 1) {
+        if (hour == 23) {
             try {
                 await dayStartCorrection(day_start);
             } catch (error) {
@@ -237,8 +236,8 @@ async function correctTop(top, day_start, api_current_wallets, api_current_addre
     await top.saveUpdatedCells();
 }
 
-async function dayStartCorrection(sheet){
-    const response = (await axios.get('https://explorer.dogechain.dog/api', {
+async function dayStartCorrection(day_start){
+    await axios.get('https://explorer.dogechain.dog/api', {
         params: {
             module:'token',
             action:'getTokenHolders',
@@ -247,27 +246,41 @@ async function dayStartCorrection(sheet){
             offset:N
             // offset:10000
         }
-    }))
-    if (response.data.result){
-        let api_current_wallets = response.data.result;
-        api_current_wallets = [...api_current_wallets.map((e)=>{
-            return {
-                address: e.address,
-                start: (Math.round(e.value/(10**18)*100)/100)
-            }
-        })]
-        await sheet.clearRows();
-        api_current_wallets.unshift({
-            address: '',
-            start: ''
-        });
-        api_current_wallets.unshift({
-            address: 'Wallet',
-            start: 'DayStartBalanc'
-        });
-        await sheet.addRows([...api_current_wallets]);
-    }
-    else console.log('network too busy...');
+    }).then(async (response)=>{
+        if (response.data.result){
+            let api_current_wallets = response.data.result;
+            api_current_wallets = [...api_current_wallets.map((e)=>{
+                return {
+                    address: e.address,
+                    start: (Math.round(e.value/(10**18)*100)/100)
+                }
+            })]
+            await day_start.clearRows({start: 4});
+            await day_start.addRows([...api_current_wallets]);
+        }
+    }).catch((e)=>{
+        console.log('could not update');}
+    )
+    // if (response.data.result){
+    //     let api_current_wallets = response.data.result;
+    //     api_current_wallets = [...api_current_wallets.map((e)=>{
+    //         return {
+    //             address: e.address,
+    //             start: (Math.round(e.value/(10**18)*100)/100)
+    //         }
+    //     })]
+    //     await sheet.clearRows();
+    //     api_current_wallets.unshift({
+    //         address: '',
+    //         start: ''
+    //     });
+    //     api_current_wallets.unshift({
+    //         address: 'Wallet',
+    //         start: 'DayStartBalanc'
+    //     });
+    //     await sheet.addRows([...api_current_wallets]);
+    // }
+    // else console.log('network too busy...');
 }
 
 
