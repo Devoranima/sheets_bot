@@ -2,7 +2,7 @@ const axios = require('axios');
 const fs = require('fs');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 
-const creds = require('./testfield-386413-25ca2288a487.json');
+const creds = require('./valon-386718-303f828b118b.json');
 
 const token = '0x2f90907fD1DC1B7a484b6f31Ddf012328c2baB28';
 
@@ -21,7 +21,6 @@ const N = 1000;
     // const morrons = doc.sheetsByIndex[1];
     let day_start = doc.sheetsByTitle.DayStart;
     await day_start.loadCells('A2:B3');
-
 
 //////////////////////////////////////////////////////////////////////////////////
     
@@ -54,6 +53,7 @@ const N = 1000;
 //            }
 //        }
 //    }, 1000*60*60);
+
     let new_day = setInterval( async function(){ 
         const date = new Date();
         let hour = date.getHours();
@@ -66,9 +66,9 @@ const N = 1000;
         }
     }, 1000*60*60);
 
-    let scanner = setInterval(() => {
+    let scanner = setInterval(async() => {
         try {
-            monitor(top, day_start);
+            await monitor(top, day_start);
         } catch (error) {
             write('./logs.txt', 'Error at monitor high level: ' + error.toString()+'\n');
         }
@@ -88,7 +88,7 @@ async function monitor(top, day_start){
     }).then(async (response)=>{
         if (response.data.result){
             //* loads range of cells into local cache - DOES NOT RETURN THE CELLS
-            await top.loadCells('A2:D1000');
+            await top.loadCells('A1:E5000');
         
         ////////////////////////////////////////////////////////////////
     
@@ -109,7 +109,8 @@ async function monitor(top, day_start){
             try {
                 await correctTop(top, day_start, api_current_wallets, api_current_addresses);
             } catch (error) {
-                write('./logs.txt', 'Error at Top Sheet Correction function: ' + error.toString()+'\n');
+                //write('./logs.txt', 'Error at Top Sheet Correction function: ' + error.toString()+'\n');
+                console.log(error);
             }
         }
     }).catch((e)=>{
@@ -117,7 +118,7 @@ async function monitor(top, day_start){
     })
     //if (response.data.result){
     //    //* loads range of cells into local cache - DOES NOT RETURN THE CELLS
-    //    await top.loadCells('A2:D1000');
+        //await top.loadCells('A2:D1000');
     
     //////////////////////////////////////////////////////////////////
 
@@ -233,7 +234,7 @@ async function correctTop(top, day_start, api_current_wallets, api_current_addre
         cell_current.value = api_current_holds;
     }
     //await day_start.addRows([...newcumers]);
-    await top.saveUpdatedCells();
+    await top.saveUpdatedCells(); 
 }
 
 async function dayStartCorrection(day_start){
