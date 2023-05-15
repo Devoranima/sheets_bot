@@ -9,7 +9,7 @@ const token = '0x2f90907fD1DC1B7a484b6f31Ddf012328c2baB28';
 const tst = '19o_EBhDeJ9x_NHbihCPv9H9aXfWFNUTcYU68QmYXLcs';
 const sheets = '1RPjRZ3V0wtFMDE-zdSnIsBnedaMM1xrbjyg_YgwhGRc';
 
-const N = 1000;
+const N = 10000;
 
 (async function (){
     console.log('starting my watch...');
@@ -109,8 +109,8 @@ async function monitor(top, day_start){
             try {
                 await correctTop(top, day_start, api_current_wallets, api_current_addresses);
             } catch (error) {
-                //write('./logs.txt', 'Error at Top Sheet Correction function: ' + error.toString()+'\n');
-                console.log(error);
+                write('./logs.txt', 'Error at Top Sheet Correction function: ' + error.toString()+'\n');
+                // console.log(error);
             }
         }
     }).catch((e)=>{
