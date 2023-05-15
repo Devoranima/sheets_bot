@@ -1,7 +1,14 @@
+
+#node
 package-lock.json 
 package.json 
 node_modules/ 
+
+#files
 testfield-386413-25ca2288a487.json
 valon-386718-303f828b118b.json
 error.txt
 logs.txt
+
+parser/result.txt
+parser/wallets.txt
