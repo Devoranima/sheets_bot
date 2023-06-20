@@ -1,26 +1,23 @@
 const axios = require('axios');
 const fs = require('fs');
+require('dotenv').config();
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const creds = require('./valon-386718-303f828b118b.json');
-
-const token = '0x2f90907fD1DC1B7a484b6f31Ddf012328c2baB28';
-
-const tst = '19o_EBhDeJ9x_NHbihCPv9H9aXfWFNUTcYU68QmYXLcs';
-const sheets = '1RPjRZ3V0wtFMDE-zdSnIsBnedaMM1xrbjyg_YgwhGRc';
 
 const N = 10000;
 
 (async function (){
     console.log('starting my watch...');
-    const doc = new GoogleSpreadsheet(sheets);
+    const doc = new GoogleSpreadsheet(process.env.SHEET_KEY);
     await doc.useServiceAccountAuth(creds);
 
     await doc.loadInfo(); // loads document properties and worksheets
     const top = doc.sheetsByTitle.Wallets;
-    // const morrons = doc.sheetsByIndex[1];
     let day_start = doc.sheetsByTitle.DayStart;
     await day_start.loadCells('A2:B3');
+
+    // await dayStartCorrection(day_start);
 
 //////////////////////////////////////////////////////////////////////////////////
     
@@ -53,11 +50,11 @@ const N = 10000;
 //            }
 //        }
 //    }, 1000*60*60);
-
+    // await dayStartCorrection(day_start);
     let new_day = setInterval( async function(){ 
         const date = new Date();
         let hour = date.getHours();
-        if (hour == 23) {
+        if (hour == 9) {
             try {
                 await dayStartCorrection(day_start);
             } catch (error) {
@@ -72,7 +69,7 @@ const N = 10000;
         } catch (error) {
             write('./logs.txt', 'Error at monitor high level: ' + error.toString()+'\n');
         }
-    }, 5000);
+    }, 15000);
 })()
 
 async function monitor(top, day_start){
@@ -81,17 +78,17 @@ async function monitor(top, day_start){
         params: {
             module:'token',
             action:'getTokenHolders',
-            contractaddress:token,
+            contractaddress:process.env.TOKEN,
             page:0,
             offset:N
         }
     }).then(async (response)=>{
+
         if (response.data.result){
+            
             //* loads range of cells into local cache - DOES NOT RETURN THE CELLS
             await top.loadCells('A1:E5000');
-        
         ////////////////////////////////////////////////////////////////
-    
             //*Wallets data we get from our Dogechain Explorer
             let api_current_wallets = response.data.result;
             api_current_wallets = [...api_current_wallets.map(e=>{
@@ -110,78 +107,11 @@ async function monitor(top, day_start){
                 await correctTop(top, day_start, api_current_wallets, api_current_addresses);
             } catch (error) {
                 write('./logs.txt', 'Error at Top Sheet Correction function: ' + error.toString()+'\n');
-                // console.log(error);
             }
         }
     }).catch((e)=>{
         console.log('network too busy...')
     })
-    //if (response.data.result){
-    //    //* loads range of cells into local cache - DOES NOT RETURN THE CELLS
-        //await top.loadCells('A2:D1000');
-    
-    //////////////////////////////////////////////////////////////////
-
-    //    //*Wallets data we get from our Dogechain Explorer
-    //    let api_current_wallets = response.data.result;
-    //    api_current_wallets = [...api_current_wallets.map(e=>{
-    //        return {
-    //            address: e.address,
-    //            current: (Math.round(e.value/(10**18)*100)/100)
-    //        }
-    //    })]
-
-    //    //*Array of current top N addresses 
-    //    const api_current_addresses = [...api_current_wallets.map(e => e.address)];
-
-    //////////////////////////////////////////////////////////////////
-
-    //    ////*Raw rows from Google Sheets
-    //    //const sheet_current_rows = await top.getRows();
-        
-    //    ////*Wallets data we get from our Google Sheets
-    //    //let sheet_current_wallets = [...sheet_current_rows.map(e =>{
-    //    //    return {
-    //    //        address: e.address,
-    //    //        start: e.start,
-    //    //        current: e.current
-    //    //    }
-    //    //})];
-    //    //sheet_current_wallets = [...sheet_current_wallets.filter((e, index)=> (index > 2 && e.address != ''))]
-
-    //    ////*Array of sheets top N addresses
-    //    //const sheet_current_addresses = [...sheet_current_wallets.map(e=>e.address)];
-
-    /////////////////////////////////////////////////////////////////
-
-    //    ////*Raw rows from Day Start Sheet
-    //    //const sheet_day_start_rows = await day_start.getRows();
-        
-    //    ////*Wallets data we get from our Day Start Sheet
-    //    //let sheet_day_start_wallets = [...sheet_day_start_rows.map(e =>{
-    //    //    return {
-    //    //        address: e.address,
-    //    //        start: e.start
-    //    //    }
-    //    //})];
-    //    //sheet_day_start_wallets = [...sheet_day_start_wallets.filter((e, index)=> index > 1)]
-
-    //    ////*Array of Day Start Sheet's addresses
-    //    //const sheet_day_start_addresses = [...sheet_day_start_wallets.map(e=>e.address)];
-
-    //    // try {
-    //    //     await correctAlert(alert, api_current_addresses, sheet_current_wallets);
-    //    // } catch (error) {
-    //    //     write('./logs.txt', 'Error at Alert Sheet Correction function: ' + error.toString()+'\n');
-    //    // }
-        
-    //    try {
-    //        await correctTop(top, day_start, api_current_wallets, api_current_addresses);
-    //    } catch (error) {
-    //        write('./logs.txt', 'Error at Top Sheet Correction function: ' + error.toString()+'\n');
-    //    }
-    //}
-    //else console.log('network too busy...');
 }
 
 async function correctAlert(ex, api_current_addresses, sheet_current_wallets){
@@ -189,12 +119,6 @@ async function correctAlert(ex, api_current_addresses, sheet_current_wallets){
     for(let i = 0; i < sheet_current_wallets.length; i++){
         const address = sheet_current_wallets[i].address;
         const start = sheet_current_wallets[i].start;
-        // array_alerts.push({
-        //     address: address,
-        //     date: getCurrentDate(),
-        //     start: start,
-        //     current: await getCurrentHoldings(address)
-        // })
         if(api_current_addresses.includes(address) == false){
             array_alerts.push({
                 address: address,
@@ -204,40 +128,25 @@ async function correctAlert(ex, api_current_addresses, sheet_current_wallets){
             })
         }
     }
-    // console.log(array_alerts);
     await ex.addRows([...array_alerts])
 }
 
 async function correctTop(top, day_start, api_current_wallets, api_current_addresses){
-    //const newcumers = [];
     for (let i = 0; i < api_current_addresses.length; i++){
         const api_address = api_current_addresses[i];
         const api_current_holds = api_current_wallets[i].current; 
 
         const cell_address = top.getCell(i+3, 1);
-        //const cell_start = top.getCell(i+3, 2);
         const cell_current = top.getCell(i+3, 3);
 
-        
-        //const index_in_start = sheet_day_start_addresses.indexOf(api_address);
-        //let start_hold;
-        //if (index_in_start == -1) {
-        //    start_hold = 0;
-        //    newcumers.push({
-        //        address: api_address,
-        //        start: 0
-        //    })
-        //}
-        //else start_hold = sheet_day_start_wallets[index_in_start].start;
         cell_address.value = api_address;
-        //cell_start.value = start_hold;
         cell_current.value = api_current_holds;
     }
-    //await day_start.addRows([...newcumers]);
     await top.saveUpdatedCells(); 
 }
 
 async function dayStartCorrection(day_start){
+    console.log('starting correction')
     await axios.get('https://explorer.dogechain.dog/api', {
         params: {
             module:'token',
@@ -245,10 +154,11 @@ async function dayStartCorrection(day_start){
             contractaddress:token,
             page:0,
             offset:N
-            // offset:10000
         }
     }).then(async (response)=>{
+        
         if (response.data.result){
+            
             let api_current_wallets = response.data.result;
             api_current_wallets = [...api_current_wallets.map((e)=>{
                 return {
@@ -256,32 +166,24 @@ async function dayStartCorrection(day_start){
                     start: (Math.round(e.value/(10**18)*100)/100)
                 }
             })]
-            await day_start.clearRows({start: 4});
-            await day_start.addRows([...api_current_wallets]);
+            await day_start.clearRows({start: 2});
+            const second = {
+                address:'Wallets',
+                start: 'DayStart'
+            }
+            const third = {
+                address:'empty',
+                start: 'string'
+            }
+            
+            await day_start.addRows([second, third, ...api_current_wallets]);
+            
         }
     }).catch((e)=>{
-        console.log('could not update');}
+        console.log(e);
+    }
     )
-    // if (response.data.result){
-    //     let api_current_wallets = response.data.result;
-    //     api_current_wallets = [...api_current_wallets.map((e)=>{
-    //         return {
-    //             address: e.address,
-    //             start: (Math.round(e.value/(10**18)*100)/100)
-    //         }
-    //     })]
-    //     await sheet.clearRows();
-    //     api_current_wallets.unshift({
-    //         address: '',
-    //         start: ''
-    //     });
-    //     api_current_wallets.unshift({
-    //         address: 'Wallet',
-    //         start: 'DayStartBalanc'
-    //     });
-    //     await sheet.addRows([...api_current_wallets]);
-    // }
-    // else console.log('network too busy...');
+    console.log('correction done')
 }
 
 
@@ -296,8 +198,7 @@ const getCurrentHoldings = async (address) => {
             address:address
         }
     }))
-    const value = (Math.round(response.data.result/(10**18)*100)/100)
-
+    const value = (Math.round(response.data.result/(10**18)*100)/100);
     return value;
 }
 
