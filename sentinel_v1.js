@@ -262,26 +262,6 @@ async function dayStartCorrection(day_start){
     }).catch((e)=>{
         console.log('could not update');}
     )
-    // if (response.data.result){
-    //     let api_current_wallets = response.data.result;
-    //     api_current_wallets = [...api_current_wallets.map((e)=>{
-    //         return {
-    //             address: e.address,
-    //             start: (Math.round(e.value/(10**18)*100)/100)
-    //         }
-    //     })]
-    //     await sheet.clearRows();
-    //     api_current_wallets.unshift({
-    //         address: '',
-    //         start: ''
-    //     });
-    //     api_current_wallets.unshift({
-    //         address: 'Wallet',
-    //         start: 'DayStartBalanc'
-    //     });
-    //     await sheet.addRows([...api_current_wallets]);
-    // }
-    // else console.log('network too busy...');
 }
 
 
