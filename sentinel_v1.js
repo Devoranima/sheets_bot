@@ -35,7 +35,7 @@ const N = 10000;
         } catch (error) {
             write('./logs.txt', 'Error at monitor high level: ' + error.toString()+'\n');
         }
-    }, 15000);
+    }, 30000);
 })()
 
 async function monitor(top, day_start){
