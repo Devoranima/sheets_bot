@@ -3,7 +3,6 @@ const fs = require('fs');
 
 const wallets = fs.readFileSync('./wallets.txt').toString().split(/[\r,\n]+/).filter(e => e != '');
 const address = '0x2f90907fD1DC1B7a484b6f31Ddf012328c2baB28';
-const wdoge = '';
 const len = wallets.length;
 
 (async function (){
@@ -11,14 +10,17 @@ const len = wallets.length;
     clear('./result.txt')
     for (let i = 0; i < len; i++){
         console.log('scanning wallet ' + (i+1) + '/' + len + '...');
-        const wallet = wallets[i]
-        await parseData(wallet, i==(len-1));
+        const wallet = wallets[i];
+        const balance = await parseGrimaceBalance(wallet);
+        if (balance !== null && balance >= 0){
+            write('./result.txt', balance + ( i !== (len-1) ? '\n' : ''));
+        }
     }
     console.log('all done, chief!');
 })()
 
-async function parseData(wallet, isLast){
-    await axios.get('https://explorer.dogechain.dog/api', {
+async function parseGrimaceBalance(wallet){
+    const result = await axios.get('https://explorer.dogechain.dog/api', {
         params: {
             module:'account',
             action:'tokenbalance',
@@ -27,13 +29,17 @@ async function parseData(wallet, isLast){
         }
     }).then((response)=>{
         if (response.data.result){
-            const value = (Math.round(response.data.result/(10**18)*100)/100)
-            write('./result.txt', value + (isLast == 0 ? '\n' : ''));
+            const value = (Math.round(response.data.result/(10**18)*100)/100);
+            return value;
         }
+        return null;
     })
     .catch(e=>{
         console.log('ERROR : network too busy...');
+        return null;
     })
+
+    return result;
 }
 
 
