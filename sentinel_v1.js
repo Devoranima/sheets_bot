@@ -29,6 +29,7 @@ const N = 10000;
         }
     }, 1000*60*60);
 
+    await monitor(top, day_start);
     let scanner = setInterval(async() => {
         try {
             await monitor(top, day_start);
@@ -39,6 +40,7 @@ const N = 10000;
 })()
 
 async function monitor(top, day_start){
+
     await axios.get('https://explorer.dogechain.dog/api', {
         params: {
             module:'token',
@@ -50,7 +52,7 @@ async function monitor(top, day_start){
     }).then(async (response)=>{
         if (response.data.result){
             //* loads range of cells into local cache - DOES NOT RETURN THE CELLS
-            await top.loadCells('A1:E5000');
+            await top.loadCells('A1:E10000');
         ////////////////////////////////////////////////////////////////
             //*Wallets data we get from our Dogechain Explorer
             let api_current_wallets = response.data.result;
@@ -140,7 +142,7 @@ const getCurrentHoldings = async (address) => {
         params: {
             module:'account',
             action:'tokenbalance',
-            contractaddress:token,
+            contractaddress:process.env.TOKEN,
             address:address
         }
     }))
